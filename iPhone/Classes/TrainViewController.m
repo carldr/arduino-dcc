@@ -33,24 +33,19 @@
 	
     CFStreamCreatePairWithSocketToHost(
 									   NULL, 
-									   (CFStringRef) @"192.168.0.128", 
+									   (CFStringRef) @"192.168.0.9", 
 									   7531, 
-									   ((iStream  != nil) ? &readStream : NULL),
-									   ((oStream != nil) ? &writeStream : NULL)
+									   &readStream,
+									   &writeStream
 									   );
 	
-    if (iStream != NULL) {
-        iStream  = [NSMakeCollectable(readStream) autorelease];
-    }
-    if (oStream != NULL) {
-        iStream = [NSMakeCollectable(writeStream) autorelease];
-    }
-	
-	if ( oStream == NULL && iStream == NULL ) {
+	if ( readStream == NULL || writeStream == NULL ) {
 		NSLog( @"Dying." );
 		exit(1);
 	}
 	
+	iStream = (NSInputStream *)readStream;
+	oStream = (NSOutputStream *)writeStream;	
 	[iStream retain];
 	[oStream retain];
 	[iStream setDelegate:self];
@@ -59,6 +54,9 @@
 	[oStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
 	[iStream open];
 	[oStream open];
+	
+	CFRelease( readStream );
+	CFRelease( writeStream );
 }
 
 - (void)stream:(NSStream *)stream handleEvent:(NSStreamEvent)eventCode {
