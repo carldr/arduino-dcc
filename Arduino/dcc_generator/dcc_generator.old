@@ -1,0 +1,166 @@
+#include <math.h>
+#undef int() //hack for arduino 0011 to allow use of stdio:
+#include <stdio.h> //gives us function sprintf
+
+#define LONG   delayMicroseconds( 100 );
+#define SHORT   delayMicroseconds( 58 );
+
+char string[100];
+
+int debug = 0;
+int dccPin = 7;                // LED connected to digital pin 13
+int ledPin = 13;                // LED connected to digital pin 13
+unsigned int instructions[64];
+
+int count = 0;
+int fast;
+
+void set_slow() {
+//  instructions[0] = 0x03;
+//  instructions[1] = 0x60; // 0x73
+//  instructions[2] = instructions[0] ^ instructions[1];
+  
+  fast = 0;
+  digitalWrite( ledPin, LOW );
+}
+
+void set_fast() {
+
+  instructions[0] = 0x03;
+  instructions[1] = 0x3f; // 0x73
+  instructions[2] = 0x90; // 0x73
+  instructions[3] = 0xac;
+
+  instructions[4] = 0xff;
+  instructions[5] = 0x85; // 0x73
+  instructions[6] = 0xff; // 0x73
+  instructions[7] = 0x85;
+
+//  instructions[0] = 0x03;
+//  instructions[1] = 0x7f; // 0x73
+//  instructions[2] = instructions[0] ^ instructions[1];
+  
+  fast = 1;
+  digitalWrite( ledPin, HIGH );
+}
+
+void setup()                    // run once, when the sketch starts
+{
+  Serial.begin(115200);
+  
+  pinMode(ledPin, OUTPUT);      // sets the digital pin as output
+  pinMode(dccPin, OUTPUT);      // sets the digital pin as output
+
+  pinMode(2, OUTPUT);      // sets the digital pin as output
+
+  pinMode(4, OUTPUT);      // sets the digital pin as output
+  pinMode(5, OUTPUT);      // sets the digital pin as output
+  pinMode(6, OUTPUT);      // sets the digital pin as output
+
+  
+  set_fast();
+}
+
+void preamble() {
+  // preamble
+  digitalWrite( 2, HIGH );
+  for ( int i = 0; i < 20; i++ ) {
+    do_one();
+  }
+  digitalWrite( 2, LOW );
+}
+
+void do_instructions( int s, int e ) {
+  for ( int i = s; i <= e; i++ ) {
+    int t = 128;
+
+    do_zero();
+
+    digitalWrite( 4+(i%3), HIGH );
+    
+    for ( int b = 0; b <= 7; b++ ) {
+      if ( debug ) {
+        sprintf( string, "%d %d %d\n", instructions[ i ], t, instructions[ i ] & t ); 
+        Serial.print( string );
+      }
+
+      if ( instructions[ i ] & t ) {        
+        do_one();
+      } else {
+        do_zero();
+      }
+      
+      t /= 2;
+    }
+
+    digitalWrite( 4+(i%3), LOW );
+
+    if ( debug ) 
+      Serial.print( "byte ended\n" );
+  }  
+}
+
+void loop()                     // run over and over again
+{
+  if ( debug ) 
+    Serial.print( "loop start\n" );
+
+  preamble();
+
+  if ( debug ) 
+    Serial.print( "preamble ended\n" );
+
+  do_instructions( 0, 3 );
+  
+  if ( debug ) 
+    Serial.print( "Instruction ended\n" );
+  
+  do_one();
+
+  preamble();
+
+  if ( debug ) 
+    Serial.print( "preamble ended\n" );
+
+  do_instructions( 4, 7 );
+  
+  if ( debug ) 
+    Serial.print( "Instruction ended\n" );
+
+  
+  if ( ++count == 750 ) {
+    if ( fast == 0 ) {
+      set_fast();
+    } else {
+      set_slow();
+    }
+    
+    count = 0;
+  }
+}
+
+inline void do_zero() {
+  if ( debug )
+    Serial.print( "0\n" );
+  
+  digitalWrite( dccPin, HIGH );
+
+  LONG
+
+  digitalWrite( dccPin, LOW );
+
+  LONG
+}
+
+inline void do_one() {
+  if ( debug )
+    Serial.print( "1\n" );
+
+  digitalWrite( dccPin, HIGH );
+
+  SHORT   
+
+  digitalWrite( dccPin, LOW );
+
+  SHORT   
+}
