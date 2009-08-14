@@ -41,7 +41,7 @@ void setup()                    // run once, when the sketch starts
   
   pinMode(2, OUTPUT);
   
-  set_speed( 0x1f );
+  set_speed( 0x00 );
   
   digitalWrite( enablePin, HIGH );
 }

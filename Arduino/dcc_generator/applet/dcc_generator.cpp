@@ -1,7 +1,3 @@
-//#include <math.h>
-//#undef int() //hack for arduino 0011 to allow use of stdio:
-//#include <stdio.h> //gives us function sprintf
-
 #define SLOW 1
 
 #define LONG   for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( l * SLOW ); }
@@ -21,7 +17,7 @@ int s = 58;
 
 char string[100];
 
-int debug = ( SLOW == 1 ? 0 : 10. );
+int debug = ( SLOW == 1 ? 0 : 10 );
 int dccPin = 7;                // LED connected to digital pin 13
 int ledPin = 13;         // LED connected to digital pin 13
 int enablePin = 6;
@@ -54,7 +50,7 @@ void setup()                    // run once, when the sketch starts
   
   pinMode(2, OUTPUT);
   
-  set_speed( 0x1f );
+  set_speed( 0x00 );
   
   digitalWrite( enablePin, HIGH );
 }

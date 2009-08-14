@@ -12,15 +12,31 @@ class SpeedServer < EventMachine::Connection
 		
 		@sp = SerialPort.new "/dev/cu.usbserial-A70063S8", 115200
 		
-		send_data "100\r\n"
+		send_data "0\r\n"
 	end
 	
 	def receive_line( line )
-		puts "*" + line + "*"
+		print "Input : " + line
 		
 		i = line.strip.to_i
-		
-		@sp.putc i
+	
+		if i < 0
+			i-=1
+		end
+
+		if i > 0
+			i+=1
+		end
+
+		if i < 0
+			i = 128 + 128 - ( i.abs )
+		else
+			i = 128 - i
+		end
+
+		puts ", Output : " + i.to_s
+
+		@sp.putc -i
 	end
 	
 	def unbind

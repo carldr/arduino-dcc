@@ -104,7 +104,7 @@
 		s = [s substringFromIndex:r.location + 2];
 		[_data setData:[s dataUsingEncoding:NSASCIIStringEncoding]];
 
-		float speedNumber = [speed intValue] / 100.0;
+		float speedNumber = [speed intValue];
 		speedSlider.value = speedNumber;
 		[self hasLoadedSpeed];
 	}
@@ -116,7 +116,7 @@
 
 - (void)timerFired:(NSTimer *)timer {
 	if ( canWrite == YES ) {
-		NSString *speed = [NSString stringWithFormat:@"%d\r\n", (int)( [speedSlider value] * 100.0 ) ];
+		NSString *speed = [NSString stringWithFormat:@"%d\r\n", (int)( [speedSlider value] ) ];
 
 		NSLog( @"Going to write data '%@'", speed );
 
