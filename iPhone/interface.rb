@@ -25,7 +25,7 @@ class SpeedServer < EventMachine::Connection
 		loco, speed = line.strip.split( /:/ ).map{ |s| s.to_i }
 	
 		if speed < 0 && speed > -127
-			speed = 129 + speed
+			speed = 129 - speed
 
 		elsif speed > 0 && speed < 127
 			speed = 1 + speed
