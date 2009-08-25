@@ -16,27 +16,31 @@ class SpeedServer < EventMachine::Connection
 	end
 	
 	def receive_line( line )
+		# 0 - 126 = Anti-Clockwise
+		# 0 - -126 = Clockwise
+		# -127/127 = Emergency Stop
+
 		print "Input : " + line
 		
-		i = line.strip.to_i
+		loco, speed = line.strip.split( /:/ ).map{ |s| s.to_i }
 	
-		if i < 0
-			i-=1
-		end
+		if speed < 0 && speed > -127
+			speed = 129 + speed
 
-		if i > 0
-			i+=1
-		end
+		elsif speed > 0 && speed < 127
+			speed = 1 + speed
 
-		if i < 0
-			i = 128 + 128 - ( i.abs )
+		elsif speed == 0
+			speed = 0
+
 		else
-			i = 128 - i
+			speed = 1
 		end
 
-		puts ", Output : " + i.to_s
+		puts ", Output to loco #{loco} : #{speed}"
 
-		@sp.putc -i
+		@sp.putc loco
+		@sp.putc speed
 	end
 	
 	def unbind

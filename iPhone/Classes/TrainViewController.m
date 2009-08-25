@@ -12,15 +12,12 @@
 
 @synthesize address;
 
-/*
  // The designated initializer.  Override if you create the controller programmatically and want to perform customization that is not appropriate for viewDidLoad.
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
-        // Custom initialization
     }
     return self;
 }
-*/
 
 - (void)createStreams {
 	NSLog( @"Setting up streams." );
@@ -33,7 +30,7 @@
 	
     CFStreamCreatePairWithSocketToHost(
 									   NULL, 
-									   (CFStringRef) @"192.168.0.9", 
+									   (CFStringRef) @"192.168.0.128", 
 									   7531, 
 									   &readStream,
 									   &writeStream
@@ -116,7 +113,7 @@
 
 - (void)timerFired:(NSTimer *)timer {
 	if ( canWrite == YES ) {
-		NSString *speed = [NSString stringWithFormat:@"%d\r\n", (int)( [speedSlider value] ) ];
+		NSString *speed = [NSString stringWithFormat:@"%d:%d\r\n", [address intValue], (int)( [speedSlider value] ) ];
 
 		NSLog( @"Going to write data '%@'", speed );
 
@@ -137,9 +134,8 @@
 	activitySpinner.hidden = true;	
 }
 
-// Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
-- (void)viewDidLoad {
-    [super viewDidLoad];
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
 
 	canWrite = NO;
 	
@@ -163,7 +159,7 @@
 	// Release any cached data, images, etc that aren't in use.
 }
 
-- (void)viewDidUnload {
+- (void)viewDidDisappear:(BOOL)animated {
 	if ( oStream ) {
 		[oStream close];
 		[oStream release];
@@ -186,6 +182,8 @@
 		[timer release];
 		timer = nil;
 	}
+	
+	[super viewDidDisappear:animated];
 }
 
 

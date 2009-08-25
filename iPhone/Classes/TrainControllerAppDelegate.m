@@ -27,7 +27,6 @@
     [window makeKeyAndVisible];
 }
 
-
 - (void)applicationWillTerminate:(UIApplication *)application {
 	// Save data if appropriate
 }
