@@ -9,9 +9,11 @@ int s = 58;
 char string[100];
 
 int debug = ( SLOW == 1 ? 0 : 10 );
-int dccPin = 7;                // LED connected to digital pin 13
 int ledPin = 13;         // LED connected to digital pin 13
-int enablePin = 6;
+
+int dccPin1 = 3;
+int dccPin2 = 4;
+int enablePin = 2;
 unsigned int instructions[64];
 
 int b = 0;
@@ -43,7 +45,8 @@ void setup()                    // run once, when the sketch starts
   Serial.begin(115200);
   
   pinMode(ledPin, OUTPUT);      // sets the digital pin as output
-  pinMode(dccPin, OUTPUT);      // sets the digital pin as output
+  pinMode(dccPin1, OUTPUT);      // sets the digital pin as output
+  pinMode(dccPin2, OUTPUT);      // sets the digital pin as output
   pinMode(enablePin, OUTPUT);
   
   pinMode(2, OUTPUT);
@@ -116,25 +119,29 @@ void loop()                     // run over and over again
 }
 
 inline void do_zero() {
-  if ( debug ) { digitalWrite( 2, HIGH ); }
+  if ( debug ) { digitalWrite( ledPin, HIGH ); }
   
-  digitalWrite( dccPin, HIGH );
+  digitalWrite( dccPin1, HIGH );
+  digitalWrite( dccPin2, LOW );
   LONG;
 
-  if ( debug ) { digitalWrite( 2, LOW ); }
+  if ( debug ) { digitalWrite( ledPin, LOW ); }
 
-  digitalWrite( dccPin, LOW );
+  digitalWrite( dccPin1, LOW );
+  digitalWrite( dccPin2, HIGH );
   LONG;
 }
 
 inline void do_one() {
-  if ( debug ) { digitalWrite( 2, HIGH ); }
+  if ( debug ) { digitalWrite( ledPin, HIGH ); }
 
-  digitalWrite( dccPin, HIGH );
+  digitalWrite( dccPin1, HIGH );
+  digitalWrite( dccPin2, LOW );
   SHORT;  
 
-  if ( debug ) { digitalWrite( 2, LOW ); }
+  if ( debug ) { digitalWrite( ledPin, LOW ); }
 
-  digitalWrite( dccPin, LOW );
+  digitalWrite( dccPin1, LOW );
+  digitalWrite( dccPin2, HIGH );
   SHORT;   
 }
