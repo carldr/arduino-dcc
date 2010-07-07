@@ -1,5 +1,5 @@
+#define NUM_LOCOS 10
 #define SLOW 1
-
 #define LONG   for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( l * SLOW ); }
 #define SHORT  for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( s * SLOW ); }
 
@@ -16,32 +16,29 @@ int dccPin2 = 4;
 int enablePin = 2;
 unsigned int instructions[64];
 
-int b = 0;
+typedef struct {
+  byte address;
+  byte speed;  // This is the speed to pass directly in the DCC command.
+} Loco;
 
-void set_speed( int loco, int s ) {
-  b = 1 - b;
-  digitalWrite( 2, b );
-  
-  if ( loco == 3 ) {
-    instructions[0] = 0x03;
-    instructions[1] = 0x3f;
-    instructions[2] = s;
-    instructions[3] = ( instructions[0] ^ instructions[1] ^ instructions[2] );
-  } else if ( loco == 4 ) {
-    instructions[4] = 0x04;
-    instructions[5] = 0x3f;
-    instructions[6] = s;
-    instructions[7] = ( instructions[4] ^ instructions[5] ^ instructions[6] );
+Loco locos[ NUM_LOCOS ];
+
+void set_speed( byte addr, byte s ) {
+  for ( int i = 0; i < NUM_LOCOS; i++ ) {
+    if ( locos[ i ].address == addr ) {
+      locos[ i ].speed = s;
+      return;
+    }
   }
-  
-  instructions[8] = 0xff;
-  instructions[9] = 0x85;
-  instructions[10] = 0xff;
-  instructions[11] = ( instructions[8] ^ instructions[9] ^ instructions[10] );
 }
 
 void setup()                    // run once, when the sketch starts
 {
+  for ( int i = 0; i<NUM_LOCOS; i++ ) {
+    locos[ i ].address = 0;
+    locos[ i ].speed = 0;
+  }
+
   Serial.begin(115200);
   
   pinMode(ledPin, OUTPUT);      // sets the digital pin as output
@@ -51,9 +48,9 @@ void setup()                    // run once, when the sketch starts
   
   pinMode(2, OUTPUT);
   
-  set_speed( 3, 0x00 );
-  set_speed( 4, 0x00 );
-  
+  locos[ 3 ].address = 3;
+  locos[ 3 ].speed = 0;
+
   digitalWrite( enablePin, HIGH );
 }
 
@@ -63,22 +60,41 @@ void preamble() {
   }
 }
 
-void do_instructions( int s, int e ) {
-  for ( int i = s; i <= e; i++ ) {
-    int t = 128;
+inline void do_byte( byte a ) {
+  int t = 128;
 
-    do_zero();
+  do_zero();      
 
-    for ( int b = 0; b <= 7; b++ ) {
-      if ( instructions[ i ] & t ) {        
-        do_one();
-      } else {
-        do_zero();
-      }
-      
-      t /= 2;
+  for ( int b = 0; b <= 7; b++ ) {
+    if ( a & t ) {
+      do_one();
+    } else {
+      do_zero();
     }
-  }  
+      
+    t /= 2;
+  }
+}
+
+inline void do_instructions() {
+  preamble();
+
+  for ( int i = 0; i < NUM_LOCOS; i++ ) {
+    if ( locos[ i ].address ) {
+      do_byte( locos[ i ].address );
+      do_byte( 0x3f );
+      do_byte( locos[ i ].speed );
+      do_byte( locos[ i ].address ^ 0x3f ^ locos[ i ].speed );
+      do_one();
+    }
+  }
+  
+  // TODO:  Work out WTF this command does.
+  do_byte( 0xff );
+  do_byte( 0x85 );
+  do_byte( 0xff );
+  do_byte( 0xff ^ 0x85 ^ 0xff );
+  do_one();
 }
 
 void do_readback() {
@@ -94,38 +110,24 @@ void do_readback() {
 
 void loop()                     // run over and over again
 {
-  preamble();
-  do_instructions( 0, 3 );
-  do_one();
-
-  preamble();
-  do_instructions( 4, 7 );
-  do_one();
-
-  preamble();
-  do_instructions( 8, 11 );
-  do_one();
+  do_instructions();
 
   do_readback();
 
   if ( Serial.available() >= 2 ) {
-    int l = Serial.read();
-    int s = Serial.read();
+    byte a = Serial.read();
+    byte s = Serial.read();
 
-    if ( l != -1 && s != -1 ) {
-      set_speed( l, s );
+    if ( a != -1 && s != -1 ) {
+      set_speed( a, s );
     }    
   }  
 }
 
 inline void do_zero() {
-  if ( debug ) { digitalWrite( ledPin, HIGH ); }
-  
   digitalWrite( dccPin1, HIGH );
   digitalWrite( dccPin2, LOW );
   LONG;
-
-  if ( debug ) { digitalWrite( ledPin, LOW ); }
 
   digitalWrite( dccPin1, LOW );
   digitalWrite( dccPin2, HIGH );
@@ -133,13 +135,9 @@ inline void do_zero() {
 }
 
 inline void do_one() {
-  if ( debug ) { digitalWrite( ledPin, HIGH ); }
-
   digitalWrite( dccPin1, HIGH );
   digitalWrite( dccPin2, LOW );
   SHORT;  
-
-  if ( debug ) { digitalWrite( ledPin, LOW ); }
 
   digitalWrite( dccPin1, LOW );
   digitalWrite( dccPin2, HIGH );
