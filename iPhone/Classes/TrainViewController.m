@@ -30,7 +30,7 @@
 	
     CFStreamCreatePairWithSocketToHost(
 									   NULL, 
-									   (CFStringRef) @"192.168.0.128", 
+									   (CFStringRef) @"localhost", 
 									   7531, 
 									   &readStream,
 									   &writeStream
