@@ -1,20 +1,15 @@
 #define NUM_LOCOS 10
 #define SLOW 1
-#define LONG   for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( l * SLOW ); }
-#define SHORT  for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( s * SLOW ); }
+#define LONG   delayMicroseconds( l * SLOW );
+#define SHORT  delayMicroseconds( s * SLOW );
 
 int l = 90;  // Digitrax : 100/58   Loksound : 90/50  Digitrax : 90/50
 int s = 50;
 
-char string[100];
-
-int debug = ( SLOW == 1 ? 0 : 10 );
 int ledPin = 13;         // LED connected to digital pin 13
-
 int dccPin1 = 3;
 int dccPin2 = 4;
 int enablePin = 2;
-unsigned int instructions[64];
 
 typedef struct {
   byte address;
@@ -22,6 +17,26 @@ typedef struct {
 } Loco;
 
 Loco locos[ NUM_LOCOS ];
+
+inline void do_zero() {
+  digitalWrite( dccPin1, HIGH );
+  digitalWrite( dccPin2, LOW );
+  LONG;
+
+  digitalWrite( dccPin1, LOW );
+  digitalWrite( dccPin2, HIGH );
+  LONG;
+}
+
+inline void do_one() {
+  digitalWrite( dccPin1, HIGH );
+  digitalWrite( dccPin2, LOW );
+  SHORT;  
+
+  digitalWrite( dccPin1, LOW );
+  digitalWrite( dccPin2, HIGH );
+  SHORT;   
+}
 
 void set_speed( byte addr, byte s ) {
   for ( int i = 0; i < NUM_LOCOS; i++ ) {
@@ -32,8 +47,7 @@ void set_speed( byte addr, byte s ) {
   }
 }
 
-void setup()                    // run once, when the sketch starts
-{
+void setup() {
   for ( int i = 0; i<NUM_LOCOS; i++ ) {
     locos[ i ].address = 0;
     locos[ i ].speed = 0;
@@ -108,8 +122,7 @@ void do_readback() {
   digitalWrite( enablePin, HIGH );
 }
 
-void loop()                     // run over and over again
-{
+void loop() {
   do_instructions();
 
   do_readback();
@@ -124,22 +137,3 @@ void loop()                     // run over and over again
   }  
 }
 
-inline void do_zero() {
-  digitalWrite( dccPin1, HIGH );
-  digitalWrite( dccPin2, LOW );
-  LONG;
-
-  digitalWrite( dccPin1, LOW );
-  digitalWrite( dccPin2, HIGH );
-  LONG;
-}
-
-inline void do_one() {
-  digitalWrite( dccPin1, HIGH );
-  digitalWrite( dccPin2, LOW );
-  SHORT;  
-
-  digitalWrite( dccPin1, LOW );
-  digitalWrite( dccPin2, HIGH );
-  SHORT;   
-}
