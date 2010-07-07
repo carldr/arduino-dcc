@@ -3,8 +3,8 @@
 #define LONG   for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( l * SLOW ); }
 #define SHORT  for ( int yy = 0; yy < SLOW; yy++ ) { delayMicroseconds( s * SLOW ); }
 
-int l = 100;
-int s = 58;
+int l = 90;  // Digitrax : 100/58   Loksound : 90/50  Digitrax : 90/50
+int s = 50;
 
 char string[100];
 
