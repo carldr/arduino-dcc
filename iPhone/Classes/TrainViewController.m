@@ -30,7 +30,7 @@
 	
     CFStreamCreatePairWithSocketToHost(
 									   NULL, 
-									   (CFStringRef) @"localhost", 
+									   (CFStringRef) @"192.168.2.1", 
 									   7531, 
 									   &readStream,
 									   &writeStream
@@ -106,23 +106,24 @@
 		[self hasLoadedSpeed];
 	}
 	
-	NSLog( s );
+	NSLog( @"%s", s );
 	[s release];
 }
 	
 
 - (void)timerFired:(NSTimer *)timer {
 	if ( canWrite == YES ) {
-		NSString *speed = [NSString stringWithFormat:@"%d:%d\r\n", [address intValue], (int)( [speedSlider value] ) ];
-
-		NSLog( @"Going to write data '%@'", speed );
-
-		const char *rawstring = [speed cStringUsingEncoding:NSASCIIStringEncoding];
-
-		NSLog( @"Writing data '%s'", rawstring );
-
-		NSInteger err = [oStream write:(uint8_t *)rawstring maxLength:strlen( rawstring )];
+		NSString *str;
+		NSInteger err;
 		
+		str = [NSString stringWithFormat:@"s %d %d\r\n", [address intValue], (int)( [speedSlider value] ) ];
+		const char *raws1 = [str cStringUsingEncoding:NSASCIIStringEncoding];
+		err = [oStream write:(uint8_t *)raws1 maxLength:strlen( raws1 )];
+		NSLog( @"Write returned %d", err );
+
+		str = [NSString stringWithFormat:@"f %d 1 %d\r\n", [address intValue], [soundButton isOn] ? 1 : 0 ];
+		const char *raws2 = [str cStringUsingEncoding:NSASCIIStringEncoding];
+		err = [oStream write:(uint8_t *)raws2 maxLength:strlen( raws2 )];
 		NSLog( @"Write returned %d", err );
 		
 		canWrite = NO;

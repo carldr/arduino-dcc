@@ -11,6 +11,7 @@
 @interface TrainViewController : UIViewController {
 	IBOutlet UIActivityIndicatorView *activitySpinner;
 	IBOutlet UISlider *speedSlider;
+	IBOutlet UISwitch *soundButton;
 	
 	NSString *address;
 	
