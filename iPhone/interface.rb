@@ -39,6 +39,7 @@ class SpeedServer < EventMachine::Connection
 
 		puts ", Output to loco #{loco} : #{speed}"
 
+		@sp.putc "s"[0]
 		@sp.putc loco
 		@sp.putc speed
 	end
