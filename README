@@ -1,0 +1,8 @@
+Basic
+=====
+
+Very limited instructions :
+
+1) Connect digital output pins 2 (enable), 3 and 4 (signal) to a DCC booster.
+2) Upload dcc_generator.pde to an Arduino.
+3) Run dcc_generator.rb, usage instructions will be displayed.
