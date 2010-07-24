@@ -1,17 +1,15 @@
 #include "WProgram.h"
 void setup();
 void change_point( int pin );
-void straight();
-void curve();
 void loop();
 int ledPin = 13;
-int pointStraight = 24;
-int pointCurved = 26;
 
 void setup() {
+  for ( int i = 0; i < 16; i++ ) {
+    pinMode( i + 22, OUTPUT );
+  }
+  
   pinMode( ledPin, OUTPUT );
-  pinMode( pointStraight, OUTPUT );
-  pinMode( pointCurved, OUTPUT );
 }
 
 int a = 16000;
@@ -34,20 +32,26 @@ void change_point( int pin ) {
   delayMicroseconds( a );
 }
 
-void straight() {
+/* void straight() {
   change_point( pointStraight );
 }
 
 void curve() {
   change_point( pointCurved );
-}  
+}  */
 
 void loop() {
-  straight();
+  for ( int i = 0; i < 16; i++ ) {
+    change_point( i + 22 );
+    
+    delay( 1000 );
+  }
+  
+/*  straight();
   delay(5000);
 
   curve();
-  delay(5000);
+  delay(5000); */
 }
 
 
