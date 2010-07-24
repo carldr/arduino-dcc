@@ -98,8 +98,8 @@
 		NSString *speed = [s substringToIndex:r.location];
 		NSLog( @"Got speed : %@", speed );
 
-		s = [s substringFromIndex:r.location + 2];
-		[_data setData:[s dataUsingEncoding:NSASCIIStringEncoding]];
+		NSString *s2 = [s substringFromIndex:r.location + 2];
+		[_data setData:[s2 dataUsingEncoding:NSASCIIStringEncoding]];
 
 		float speedNumber = [speed intValue];
 		speedSlider.value = speedNumber;
