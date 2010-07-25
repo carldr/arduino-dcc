@@ -7,6 +7,10 @@ require "serialport"
 $sp = SerialPort.new "/dev/cu.usbserial-A70063S8", 115200
 
 def do_speed( loco, speed )
+	if speed > -10 and speed < 10
+		speed = 0
+	end
+
 	if speed < 0 && speed > -127
 		speed = 129 - speed
 
