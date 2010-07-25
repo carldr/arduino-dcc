@@ -106,7 +106,7 @@
 		[self hasLoadedSpeed];
 	}
 	
-	NSLog( @"%s", s );
+	NSLog( @"%@", s );
 	[s release];
 }
 	
