@@ -35,6 +35,10 @@ def do_function( loco, func, status )
 	[ "f"[0], loco, func, status ]
 end
 
+def do_point( point, straight )
+	[ "p"[0], point, straight ]
+end
+
 def put_data( data )
 	print "Output : "
 	data.each do |d|
@@ -56,6 +60,8 @@ while a = gets
 		do_speed( *deets )
 	when "f"
 		do_function( *deets )
+	when "p"
+		do_point( *deets )
 	end
 	
 	put_data( data )

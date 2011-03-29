@@ -1,4 +1,5 @@
 #define NUM_LOCOS 10
+#define NUM_POINTS 10
 #define SLOW 1
 #define LONG   delayMicroseconds( l * SLOW );
 #define SHORT  delayMicroseconds( s * SLOW );
@@ -19,7 +20,13 @@ typedef struct {
   byte functions;
 } Loco;
 
+typedef struct {
+  byte address;
+  boolean straight;
+} Point;
+
 Loco locos[ NUM_LOCOS ];
+Point points[ NUM_POINTS ];
 
 inline void do_zero() {
   digitalWrite( dccPin1, HIGH );
@@ -34,12 +41,21 @@ inline void do_zero() {
 inline void do_one() {
   digitalWrite( dccPin1, HIGH );
   digitalWrite( dccPin2, LOW );
-  SHORT;  
+  SHORT;
 
   digitalWrite( dccPin1, LOW );
   digitalWrite( dccPin2, HIGH );
   SHORT;   
 }
+
+void set_point( byte addr, byte s ) {
+  for ( int i = 0; i < NUM_POINTS; i++ ) {
+    if ( points[ i ].address == addr ) {
+      points[ i ].straight = (s>0);
+      return;
+    }
+  }
+}  
 
 void set_speed( byte addr, byte s ) {
   for ( int i = 0; i < NUM_LOCOS; i++ ) {
@@ -71,6 +87,12 @@ void setup() {
     locos[ i ].functions = 0;
   }
 
+
+  for ( int i = 0; i<NUM_POINTS; i++ ) {
+    points[ i ].address = 0;
+    points[ i ].straight = false;
+  }
+
   Serial.begin(115200);
   
   pinMode(ledPin, OUTPUT);      // sets the digital pin as output
@@ -83,6 +105,18 @@ void setup() {
   locos[ 3 ].address = 3;
   locos[ 3 ].speed = 0;
   locos[ 3 ].functions = 0;
+  
+  points[ 0 ].address = 1;
+  points[ 0 ].straight = true;
+  
+  points[ 1 ].address = 2;
+  points[ 1 ].straight = true;
+
+  points[ 2 ].address = 3;
+  points[ 2 ].straight = true;
+
+  points[ 3 ].address = 4;
+  points[ 3 ].straight = true;
 
   digitalWrite( enablePin, HIGH );
 }
@@ -123,6 +157,27 @@ inline void do_instructions() {
       do_byte( locos[ i ].address );
       do_byte( 128 + locos[ i ].functions );
       do_byte( locos[ i ].address ^ ( 128 + locos[ i ].functions ) );
+      do_one();
+    }
+  }
+
+  for ( int i = 0; i < NUM_POINTS; i++ ) {
+    if ( points[ i ].address ) {
+      int channel = (( ( points[i].address - 1 ) & 0x03 ) << 1 );
+      if ( points[ i ].straight ) {
+        channel |= 1;
+      }
+      
+      int address = ( points[i].address - 1 ) >> 2;
+      address += 1;
+      
+      int a = 0x80 | ( address & 0x3f );
+      int b = 0x80 | ( ( ( ( ~address ) >> 6 ) & 0x07 ) << 4 ) | 0x08 /* always active */ | ( channel & 0x07 );
+
+      preamble();
+      do_byte( a );
+      do_byte( b );
+      do_byte( a ^ b );
       do_one();
     }
   }
@@ -172,6 +227,14 @@ void loop() {
         set_function( Serial.read(), Serial.read(), Serial.read() );
       }
 
+      in_instruction = 0;
+      break;
+    
+    case 'p':
+      if ( Serial.available() >= 2 ) {
+        set_point( Serial.read(), Serial.read() );
+      }
+      
       in_instruction = 0;
       break;
   } 
