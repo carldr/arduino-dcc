@@ -102,10 +102,18 @@ void setup() {
   
   pinMode(2, OUTPUT);
   
-  locos[ 3 ].address = 3;
-  locos[ 3 ].speed = 0;
-  locos[ 3 ].functions = 0;
-  
+  locos[ 0 ].address = 35;
+  locos[ 0 ].speed = 0;
+  locos[ 0 ].functions = 0;
+
+  locos[ 1 ].address = 13;
+  locos[ 1 ].speed = 0;
+  locos[ 1 ].functions = 0;
+
+  locos[ 2 ].address = 18;
+  locos[ 2 ].speed = 0;
+  locos[ 2 ].functions = 0;
+
   points[ 0 ].address = 1;
   points[ 0 ].straight = true;
   
@@ -152,7 +160,7 @@ inline void do_instructions() {
       do_byte( locos[ i ].speed );
       do_byte( locos[ i ].address ^ 0x3f ^ locos[ i ].speed );
       do_one();
-      
+
       preamble();
       do_byte( locos[ i ].address );
       do_byte( 128 + locos[ i ].functions );
@@ -181,7 +189,7 @@ inline void do_instructions() {
       do_one();
     }
   }
-  
+ 
   // TODO:  Work out WTF this command does.
   preamble();
   do_byte( 0xff );
