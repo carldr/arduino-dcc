@@ -4,13 +4,16 @@
 #define LONG   delayMicroseconds( l * SLOW );
 #define SHORT  delayMicroseconds( s * SLOW );
 
-int l = 88;  // Digitrax : 100/58   Loksound : 90/50  Digitrax : 90/50
-int s = 48;
+int l = 100;
+int s = 58;
 
 int ledPin = 13;         // LED connected to digital pin 13
 int dccPin1 = 3;
 int dccPin2 = 4;
 int enablePin = 2;
+
+int state1 = B00001100;
+int state2 = B00010100;
 
 byte in_instruction = 0;
 
@@ -29,22 +32,18 @@ Loco locos[ NUM_LOCOS ];
 Point points[ NUM_POINTS ];
 
 inline void do_zero() {
-  digitalWrite( dccPin1, HIGH );
-  digitalWrite( dccPin2, LOW );
+  PORTD = state1;
   LONG;
 
-  digitalWrite( dccPin1, LOW );
-  digitalWrite( dccPin2, HIGH );
+  PORTD = state2;
   LONG;
 }
 
 inline void do_one() {
-  digitalWrite( dccPin1, HIGH );
-  digitalWrite( dccPin2, LOW );
+  PORTD = state1;
   SHORT;
 
-  digitalWrite( dccPin1, LOW );
-  digitalWrite( dccPin2, HIGH );
+  PORTD = state2;
   SHORT;   
 }
 
@@ -111,6 +110,10 @@ void setup() {
   locos[ 1 ].functions = 0;
 
   locos[ 2 ].address = 18;
+  locos[ 2 ].speed = 0;
+  locos[ 2 ].functions = 0;
+
+  locos[ 2 ].address = 74;
   locos[ 2 ].speed = 0;
   locos[ 2 ].functions = 0;
 
@@ -212,7 +215,6 @@ void do_readback() {
 
 void loop() {
   do_instructions();
-
   do_readback();
 
   if ( !in_instruction ) {
