@@ -1,11 +1,7 @@
 #define NUM_LOCOS 10
 #define NUM_POINTS 10
-#define SLOW 1
-#define LONG   delayMicroseconds( l * SLOW );
-#define SHORT  delayMicroseconds( s * SLOW );
-
-int l = 100;
-int s = 58;
+#define LONG   delayMicroseconds( 100 );
+#define SHORT  delayMicroseconds( 58 );
 
 int ledPin = 13;         // LED connected to digital pin 13
 int dccPin1 = 3;
