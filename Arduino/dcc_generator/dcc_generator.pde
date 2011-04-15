@@ -9,8 +9,21 @@
 #define OUTPUT_STATE_1 B00001100;
 #define OUTPUT_STATE_2 B00010100;
 
+// Global vars
 byte in_instruction = 0;
 
+// Functions
+inline void do_instructions();
+inline void do_readback();
+void set_point( byte addr, byte s );
+void set_speed( byte addr, byte s );
+void set_function( byte addr, byte func, byte status );
+inline void do_preamble();
+inline void do_byte( byte a );
+inline void do_one();
+inline void do_zero();
+
+// Linked lists
 struct _loco {
 	byte address;
 	byte speed;  // This is the speed to pass directly in the DCC command.
@@ -34,20 +47,55 @@ Loco *firstLoco = NULL;
 Point *points = NULL;
 Point *firstPoint = NULL;
 
-inline void do_zero() {
-	PORTD = OUTPUT_STATE_1;
-	LONG;
 
-	PORTD = OUTPUT_STATE_2;
-	LONG;
+// Here we go!
+
+void setup() {
+	Serial.begin(115200);
+
+	pinMode( LED_PIN, OUTPUT );
+	pinMode( DCC_PIN_1, OUTPUT );
+	pinMode( DCC_PIN_2, OUTPUT );
+	pinMode( ENABLE_PIN, OUTPUT );
+
+	digitalWrite( ENABLE_PIN, HIGH );
 }
 
-inline void do_one() {
-	PORTD = OUTPUT_STATE_1;
-	SHORT;
+void loop() {
+	do_instructions();
+	do_readback();
 
-	PORTD = OUTPUT_STATE_2;
-	SHORT;   
+	if ( !in_instruction ) {
+		if ( Serial.available() >= 1 ) {
+			in_instruction = Serial.read();
+		}
+	}
+
+	switch ( in_instruction ) {
+		case 's':
+			if ( Serial.available() >= 2 ) {
+				set_speed( Serial.read(), Serial.read() );
+			}
+
+			in_instruction = 0;
+			break;
+
+		case 'f':
+			if ( Serial.available() >=3 ) {
+				set_function( Serial.read(), Serial.read(), Serial.read() );
+			}
+
+			in_instruction = 0;
+			break;
+
+		case 'p':
+			if ( Serial.available() >= 2 ) {
+				set_point( Serial.read(), Serial.read() );
+			}
+
+			in_instruction = 0;
+			break;
+	} 
 }
 
 void set_point( byte addr, byte s ) {
@@ -100,18 +148,69 @@ void set_function( byte addr, byte func, byte status ) {
 	}  
 }
 
-void setup() {
-	Serial.begin(115200);
 
-	pinMode( LED_PIN, OUTPUT );
-	pinMode( DCC_PIN_1, OUTPUT );
-	pinMode( DCC_PIN_2, OUTPUT );
-	pinMode( ENABLE_PIN, OUTPUT );
+
+inline void do_instructions() {
+	for ( Loco *curLoco = firstLoco; curLoco; curLoco = curLoco->next ) {
+		if ( curLoco->address ) {
+			do_preamble();
+			do_byte( curLoco->address );
+			do_byte( 0x3f );
+			do_byte( curLoco->speed );
+			do_byte( curLoco->address ^ 0x3f ^ curLoco->speed );
+			do_one();
+
+			do_preamble();
+			do_byte( curLoco->address );
+			do_byte( 128 + curLoco->functions );
+			do_byte( curLoco->address ^ ( 128 + curLoco->functions ) );
+			do_one();
+		}
+	}
+
+	for ( Point *curPoint = firstPoint; curPoint; curPoint = curPoint->next ) {
+		if ( curPoint->address ) {
+			int channel = (( ( curPoint->address - 1 ) & 0x03 ) << 1 );
+			if ( curPoint->straight ) {
+				channel |= 1;
+			}
+
+			int address = ( curPoint->address - 1 ) >> 2;
+			address += 1;
+
+			int a = 0x80 | ( address & 0x3f );
+			int b = 0x80 | ( ( ( ( ~address ) >> 6 ) & 0x07 ) << 4 ) | 0x08 /* always active */ | ( channel & 0x07 );
+
+			do_preamble();
+			do_byte( a );
+			do_byte( b );
+			do_byte( a ^ b );
+			do_one();
+		}
+	}
+
+	// TODO:  Work out WTF this command does.
+	do_preamble();
+	do_byte( 0xff );
+	do_byte( 0x85 );
+	do_byte( 0xff );
+	do_byte( 0xff ^ 0x85 ^ 0xff );
+	do_one();
+}
+
+inline void do_readback() {
+	digitalWrite( ENABLE_PIN, LOW );
+
+	SHORT;
+	SHORT;
+	SHORT;
+	SHORT;
 
 	digitalWrite( ENABLE_PIN, HIGH );
 }
 
-void preamble() {
+
+inline void do_preamble() {
 	for ( int i = 0; i < 20; i++ ) {
 		do_one();
 	}
@@ -133,99 +232,18 @@ inline void do_byte( byte a ) {
 	}
 }
 
-inline void do_instructions() {
-	for ( Loco *curLoco = firstLoco; curLoco; curLoco = curLoco->next ) {
-		if ( curLoco->address ) {
-			preamble();
-			do_byte( curLoco->address );
-			do_byte( 0x3f );
-			do_byte( curLoco->speed );
-			do_byte( curLoco->address ^ 0x3f ^ curLoco->speed );
-			do_one();
+inline void do_zero() {
+	PORTD = OUTPUT_STATE_1;
+	LONG;
 
-			preamble();
-			do_byte( curLoco->address );
-			do_byte( 128 + curLoco->functions );
-			do_byte( curLoco->address ^ ( 128 + curLoco->functions ) );
-			do_one();
-		}
-	}
-
-	for ( Point *curPoint = firstPoint; curPoint; curPoint = curPoint->next ) {
-		if ( curPoint->address ) {
-			int channel = (( ( curPoint->address - 1 ) & 0x03 ) << 1 );
-			if ( curPoint->straight ) {
-				channel |= 1;
-			}
-
-			int address = ( curPoint->address - 1 ) >> 2;
-			address += 1;
-
-			int a = 0x80 | ( address & 0x3f );
-			int b = 0x80 | ( ( ( ( ~address ) >> 6 ) & 0x07 ) << 4 ) | 0x08 /* always active */ | ( channel & 0x07 );
-
-			preamble();
-			do_byte( a );
-			do_byte( b );
-			do_byte( a ^ b );
-			do_one();
-		}
-	}
-
-	// TODO:  Work out WTF this command does.
-	preamble();
-	do_byte( 0xff );
-	do_byte( 0x85 );
-	do_byte( 0xff );
-	do_byte( 0xff ^ 0x85 ^ 0xff );
-	do_one();
+	PORTD = OUTPUT_STATE_2;
+	LONG;
 }
 
-void do_readback() {
-	digitalWrite( ENABLE_PIN, LOW );
-
-	SHORT;
-	SHORT;
-	SHORT;
+inline void do_one() {
+	PORTD = OUTPUT_STATE_1;
 	SHORT;
 
-	digitalWrite( ENABLE_PIN, HIGH );
+	PORTD = OUTPUT_STATE_2;
+	SHORT;   
 }
-
-void loop() {
-	do_instructions();
-	do_readback();
-
-	if ( !in_instruction ) {
-		if ( Serial.available() >= 1 ) {
-			in_instruction = Serial.read();
-		}
-	}
-
-	switch ( in_instruction ) {
-		case 's':
-			if ( Serial.available() >= 2 ) {
-				set_speed( Serial.read(), Serial.read() );
-			}
-
-			in_instruction = 0;
-			break;
-
-		case 'f':
-			if ( Serial.available() >=3 ) {
-				set_function( Serial.read(), Serial.read(), Serial.read() );
-			}
-
-			in_instruction = 0;
-			break;
-
-		case 'p':
-			if ( Serial.available() >= 2 ) {
-				set_point( Serial.read(), Serial.read() );
-			}
-
-			in_instruction = 0;
-			break;
-	} 
-}
-
