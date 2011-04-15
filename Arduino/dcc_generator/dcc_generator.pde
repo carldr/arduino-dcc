@@ -1,5 +1,3 @@
-#define NUM_LOCOS 10
-#define NUM_POINTS 10
 #define LONG   delayMicroseconds( 100 );
 #define SHORT  delayMicroseconds( 58 );
 
@@ -13,19 +11,28 @@
 
 byte in_instruction = 0;
 
-typedef struct {
+struct _loco {
 	byte address;
 	byte speed;  // This is the speed to pass directly in the DCC command.
 	byte functions;
-} Loco;
+	
+	struct _loco *next;
+};
+typedef struct _loco Loco;
 
-typedef struct {
+struct _point {
 	byte address;
 	boolean straight;
-} Point;
+	
+	struct _point *next;
+};
+typedef struct _point Point;
 
-Loco locos[ NUM_LOCOS ];
-Point points[ NUM_POINTS ];
+Loco *locos = NULL;
+Loco *firstLoco = NULL;
+
+Point *points = NULL;
+Point *firstPoint = NULL;
 
 inline void do_zero() {
 	PORTD = OUTPUT_STATE_1;
@@ -44,30 +51,48 @@ inline void do_one() {
 }
 
 void set_point( byte addr, byte s ) {
-	for ( int i = 0; i < NUM_POINTS; i++ ) {
-		if ( points[ i ].address == addr ) {
-			points[ i ].straight = (s>0);
+	for ( Point *curPoint = firstPoint; curPoint; curPoint = curPoint->next ) {
+		if ( curPoint->address == addr ) {
+			curPoint->straight = (s>0);
 			return;
 		}
 	}
+	
+	//  Didn't find an existing point with that address, so create a new one
+	//  and stick it at the front of the queue.
+	Point *newPoint = (Point *)malloc( sizeof( Point ) * 1 );
+	newPoint->address = addr;
+	newPoint->straight = (s>0);
+	newPoint->next = firstPoint;
+	
+	firstPoint = newPoint;
 }  
 
 void set_speed( byte addr, byte s ) {
-	for ( int i = 0; i < NUM_LOCOS; i++ ) {
-		if ( locos[ i ].address == addr ) {
-			locos[ i ].speed = s;
+	for ( Loco *curLoco = firstLoco; curLoco; curLoco = curLoco->next ) {
+		if ( curLoco->address == addr ) {
+			curLoco->speed = s;
 			return;
 		}
 	}
+
+	//  Didn't find an existing loco with that address, so create a new one
+	//  and stick it at the front of the queue.
+	Loco *newLoco = (Loco *)malloc( sizeof( Loco ) * 1 );
+	newLoco->address = addr;
+	newLoco->speed = s;
+	newLoco->next = firstLoco;
+	
+	firstLoco = newLoco;
 }
 
 void set_function( byte addr, byte func, byte status ) {
-	for ( int i = 0; i < NUM_LOCOS; i++ ) {
-		if ( locos[ i ].address == addr ) {
+	for ( Loco *curLoco = firstLoco; curLoco; curLoco = curLoco->next ) {
+		if ( curLoco->address == addr ) {
 			if ( status == 1 ) {
-				locos[ i ].functions |= 1 << ( func - 1 );
+				curLoco->functions |= 1 << ( func - 1 );
 			} else {
-				locos[ i ].functions &= ~( 1 << ( func - 1 ) );
+				curLoco->functions &= ~( 1 << ( func - 1 ) );
 			}
 
 			return;
@@ -76,51 +101,12 @@ void set_function( byte addr, byte func, byte status ) {
 }
 
 void setup() {
-	for ( int i = 0; i<NUM_LOCOS; i++ ) {
-		locos[ i ].address = 0;
-		locos[ i ].speed = 0;
-		locos[ i ].functions = 0;
-	}
-
-	for ( int i = 0; i<NUM_POINTS; i++ ) {
-		points[ i ].address = 0;
-		points[ i ].straight = false;
-	}
-
 	Serial.begin(115200);
 
 	pinMode( LED_PIN, OUTPUT );
 	pinMode( DCC_PIN_1, OUTPUT );
 	pinMode( DCC_PIN_2, OUTPUT );
 	pinMode( ENABLE_PIN, OUTPUT );
-
-	locos[ 0 ].address = 35;
-	locos[ 0 ].speed = 0;
-	locos[ 0 ].functions = 0;
-
-	locos[ 1 ].address = 13;
-	locos[ 1 ].speed = 0;
-	locos[ 1 ].functions = 0;
-
-	locos[ 2 ].address = 18;
-	locos[ 2 ].speed = 0;
-	locos[ 2 ].functions = 0;
-
-	locos[ 2 ].address = 74;
-	locos[ 2 ].speed = 0;
-	locos[ 2 ].functions = 0;
-
-	points[ 0 ].address = 1;
-	points[ 0 ].straight = true;
-
-	points[ 1 ].address = 2;
-	points[ 1 ].straight = true;
-
-	points[ 2 ].address = 3;
-	points[ 2 ].straight = true;
-
-	points[ 3 ].address = 4;
-	points[ 3 ].straight = true;
 
 	digitalWrite( ENABLE_PIN, HIGH );
 }
@@ -148,31 +134,31 @@ inline void do_byte( byte a ) {
 }
 
 inline void do_instructions() {
-	for ( int i = 0; i < NUM_LOCOS; i++ ) {
-		if ( locos[ i ].address ) {
+	for ( Loco *curLoco = firstLoco; curLoco; curLoco = curLoco->next ) {
+		if ( curLoco->address ) {
 			preamble();
-			do_byte( locos[ i ].address );
+			do_byte( curLoco->address );
 			do_byte( 0x3f );
-			do_byte( locos[ i ].speed );
-			do_byte( locos[ i ].address ^ 0x3f ^ locos[ i ].speed );
+			do_byte( curLoco->speed );
+			do_byte( curLoco->address ^ 0x3f ^ curLoco->speed );
 			do_one();
 
 			preamble();
-			do_byte( locos[ i ].address );
-			do_byte( 128 + locos[ i ].functions );
-			do_byte( locos[ i ].address ^ ( 128 + locos[ i ].functions ) );
+			do_byte( curLoco->address );
+			do_byte( 128 + curLoco->functions );
+			do_byte( curLoco->address ^ ( 128 + curLoco->functions ) );
 			do_one();
 		}
 	}
 
-	for ( int i = 0; i < NUM_POINTS; i++ ) {
-		if ( points[ i ].address ) {
-			int channel = (( ( points[i].address - 1 ) & 0x03 ) << 1 );
-			if ( points[ i ].straight ) {
+	for ( Point *curPoint = firstPoint; curPoint; curPoint = curPoint->next ) {
+		if ( curPoint->address ) {
+			int channel = (( ( curPoint->address - 1 ) & 0x03 ) << 1 );
+			if ( curPoint->straight ) {
 				channel |= 1;
 			}
 
-			int address = ( points[i].address - 1 ) >> 2;
+			int address = ( curPoint->address - 1 ) >> 2;
 			address += 1;
 
 			int a = 0x80 | ( address & 0x3f );
