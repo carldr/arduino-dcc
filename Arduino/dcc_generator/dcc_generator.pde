@@ -3,13 +3,13 @@
 #define LONG   delayMicroseconds( 100 );
 #define SHORT  delayMicroseconds( 58 );
 
-int ledPin = 13;         // LED connected to digital pin 13
-int dccPin1 = 3;
-int dccPin2 = 4;
-int enablePin = 2;
+#define LED_PIN 13
+#define DCC_PIN_1 3
+#define DCC_PIN_2 4
+#define ENABLE_PIN 2
 
-int state1 = B00001100;
-int state2 = B00010100;
+#define OUTPUT_STATE_1 B00001100;
+#define OUTPUT_STATE_2 B00010100;
 
 byte in_instruction = 0;
 
@@ -28,18 +28,18 @@ Loco locos[ NUM_LOCOS ];
 Point points[ NUM_POINTS ];
 
 inline void do_zero() {
-  PORTD = state1;
+  PORTD = OUTPUT_STATE_1;
   LONG;
 
-  PORTD = state2;
+  PORTD = OUTPUT_STATE_2;
   LONG;
 }
 
 inline void do_one() {
-  PORTD = state1;
+  PORTD = OUTPUT_STATE_1;
   SHORT;
 
-  PORTD = state2;
+  PORTD = OUTPUT_STATE_2;
   SHORT;   
 }
 
@@ -90,12 +90,10 @@ void setup() {
 
   Serial.begin(115200);
   
-  pinMode(ledPin, OUTPUT);      // sets the digital pin as output
-  pinMode(dccPin1, OUTPUT);      // sets the digital pin as output
-  pinMode(dccPin2, OUTPUT);      // sets the digital pin as output
-  pinMode(enablePin, OUTPUT);
-  
-  pinMode(2, OUTPUT);
+  pinMode( LED_PIN, OUTPUT );
+  pinMode( DCC_PIN_1, OUTPUT );
+  pinMode( DCC_PIN_2, OUTPUT );
+  pinMode( ENABLE_PIN, OUTPUT );
   
   locos[ 0 ].address = 35;
   locos[ 0 ].speed = 0;
@@ -125,7 +123,7 @@ void setup() {
   points[ 3 ].address = 4;
   points[ 3 ].straight = true;
 
-  digitalWrite( enablePin, HIGH );
+  digitalWrite( ENABLE_PIN, HIGH );
 }
 
 void preamble() {
@@ -199,14 +197,14 @@ inline void do_instructions() {
 }
 
 void do_readback() {
-  digitalWrite( enablePin, LOW );
+  digitalWrite( ENABLE_PIN, LOW );
   
   SHORT;
   SHORT;
   SHORT;
   SHORT;
   
-  digitalWrite( enablePin, HIGH );
+  digitalWrite( ENABLE_PIN, HIGH );
 }
 
 void loop() {
